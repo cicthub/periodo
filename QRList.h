@@ -1,10 +1,12 @@
 #pragma once
 
-#include "gmp.h"
-//#include <Windows.h>
+#include "stdafx.h"
+
 
 typedef struct QRNodeStruct
 {
+	const long DataLength = 4096;
+
 	QRNodeStruct* next;
 	char* data;
 
@@ -14,12 +16,13 @@ typedef struct QRNodeStruct
 	}
 	QRNodeStruct(mpz_t iteration, mpz_t q, mpz_t r) : next(nullptr)
 	{
-		data = new char[1024];
-		gmp_sprintf(data, "%-20Zd%-20Zd%-20Zd\n", iteration, q, r);
+		size_t sz = mpz_sizeinbase(iteration, 10) + mpz_sizeinbase(q, 10) + mpz_sizeinbase(r, 10) + 50;
+		data = (char*)malloc(sz + 1);
+		gmp_sprintf(data, "%-20Zd%-20Zd%-20Zd", iteration, q, r);
 	}
 	~QRNodeStruct()
 	{
-		delete[] data;
+		free(data);
 		next = nullptr;
 	}
 
@@ -30,7 +33,8 @@ class QRList
 private:
 	PQRNode head;
 	PQRNode middle;
-	PQRNode end;
+	PQRNode tail;
+
 	//long nodesCount;
 	mpz_t nodesCount;
 	unsigned long size;
@@ -38,7 +42,7 @@ private:
 
 public:
 
-	explicit QRList(unsigned long size) :head(nullptr), end(nullptr)
+	explicit QRList(unsigned long size = 0) : head(nullptr), tail(nullptr)
 	{
 		this->size = size;
 		mpz_init(nodesCount);
@@ -50,46 +54,73 @@ public:
 		//clean
 	}
 
-
-	void Add(mpz_t iteration, mpz_t q, mpz_t r)
+	// Add a new node to the list
+	void Add(mpz_t iteration,mpz_t q, mpz_t r)	
 	{
+		// Create new node
 		PQRNode newNode = new QRNode(iteration, q, r);
-		if (mpz_cmp_d(nodesCount,0) == 0)
-		{
+
+		if (IsListEmpty()) {
+			//Attach head and tile to the node
 			head = new QRNode();
 			head->next = newNode;
-			end = new QRNode();
-			end->next = newNode;
-			mpz_add_ui(nodesCount, nodesCount, 1); // nodesCount++
+			tail = new QRNode();
+			tail->next = newNode;
+			IncNodesCount();
 			return;
 		}
-		//add new node and move end
-		if (mpz_cmp_d(nodesCount, size)==0)
-			end->next->next = nullptr;
-		else
-			end->next->next = newNode;
 
-		end->next = newNode;
-		mpz_add_ui(nodesCount, nodesCount, 1);
-		// if we reached size, we remove the first node
-		// so that the list has always the same size
-		if (mpz_cmp_d(nodesCount, size+1)==0)
+
+		if (size == 0)
 		{
-			middle = new QRNode();
-			middle->next = newNode;
-			//nodesCount++;
+			// link last node to the new one
+			tail->next->next = newNode;
+			// move tail to point to the new node
+			tail->next = newNode;
+			IncNodesCount();
 		}
-		if (mpz_cmp_d(nodesCount, 2 * size) > 0)
+		else // static size, move head and tail in order to preserve size
 		{
-			//move moddle
-			PQRNode aux = new QRNode();
-			aux->next = middle->next;
-			middle->next = middle->next->next;
-			delete aux->next;
-			delete aux;
+			if (mpz_cmp_d(nodesCount, size) == 0)
+				tail->next->next = nullptr;
+			// if we reached size, we remove the first node
+			// so that the list has always the same size
+			if (mpz_cmp_d(nodesCount, size + 1) == 0) {
+				middle = new QRNode();
+				middle->next = newNode;
+				//nodesCount++;
+			}
+
+			if (mpz_cmp_d(nodesCount, 2 * size) > 0) {
+				//move moddle
+				PQRNode aux = new QRNode();
+				aux->next = middle->next;
+				middle->next = middle->next->next;
+				delete aux->next;
+				delete aux;
+			}
 		}
+		
 	};
-	std::string toString()
+
+	void Print()
+	{
+		int c;
+		c = 0;
+		PQRNode pCurrNode = head->next;
+		std::stringstream ss;
+		do	{
+			std::string sline(pCurrNode->data);
+			ss << pCurrNode << ": " << sline << " next=" << pCurrNode->next << std::endl;
+			std::cout << ss.str();
+			pCurrNode = pCurrNode->next;
+			c++;
+		} while (mpz_cmp_d(nodesCount, c) != 0);
+		//while (pCurrNode != 0);
+	}
+
+
+	std::string ToString()
 	{
 		PQRNode pCurrNode = head->next;
 		std::stringstream ss;
@@ -97,8 +128,7 @@ public:
 		//char* msgbuf= new char[100];
 
 		//print first set of size = "size"
-		do
-		{
+		do	{
 			//sprintf(msgbuf, "Counter %d\n", counter++);
 			//OutputDebugString(msgbuf);
 			std::string sline(pCurrNode->data);
@@ -108,8 +138,7 @@ public:
 		
 		//print second set from middle to end
 		pCurrNode = middle->next;
-		do
-		{
+		do	{
 			//sprintf(msgbuf, "Counter %d\n", counter++);
 			//OutputDebugString(msgbuf);
 			std::string sline(pCurrNode->data);
@@ -119,6 +148,22 @@ public:
 
 		return ss.str();
 	};
+
+private:
+	void IncNodesCount()
+	{
+		mpz_add_ui(nodesCount, nodesCount, 1); // nodesCount++
+	}
+
+	bool IsListEmpty()
+	{
+		return (mpz_cmp_d(nodesCount, 0) == 0);
+	}
+
+	bool IsListFull()
+	{
+		return (size > 0 && mpz_cmp_d(nodesCount, size) == 0);
+	}
 
 };
 

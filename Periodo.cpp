@@ -1,57 +1,14 @@
-// Periodo.cpp : Defines the entry point for the console application.
-//
-
 #include "stdafx.h"
-#include "gmp.h"
-#include <tchar.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <sstream>
-#include <string.h>
-//#include "gmp.h"
-//#include "mpfr.h"
-#include "QRList.h"
-#include <time.h>
-#include <stdint.h>
-//#include <unordered_map>
-#include <fstream>
-#include <math.h>
-#include <string.h>
-//#include <afxwin.h>// MFC
-//#include <gdiplus.h>//GDI
-//#include "sqlite3.h"
-#include <windows.h>
-//#include "rand_sse.h"
-
-
-
 
 using namespace std;
 
-#pragma region Prototypes
-
-void ProcessParameters(int argc, char* argv[]);
-void ComputeDivision(mpz_t numerator, mpz_t denominator, mpz_t antiPeriod, bool printPartial, int imageSize, bool log, mpz_t period);
-int	Test_presenza_AP(mpz_t d, mpz_t ap);
-void gmp_power(mpz_t risultato, mpz_t base, mpz_t exp);
-
-#pragma endregion
-
-//globals
-mpz_t numerator;
-mpz_t denominator;
-int imageSize = 0;
-bool logDivision = false;
-bool partial = false;
-bool updateNumberDB = false;
-bool wantExit = false;
-bool knowledgeBase = false;
-mpz_t matrixRows;
-mpz_t matrixColumns;
 
 int _tmain(int argc, char* argv[])
 {
+
+	QRListTest();
+
+
 	time_t start, stop;
 	mpz_t antiPeriod;
 	mpz_init(antiPeriod);
@@ -356,7 +313,7 @@ void ComputeDivision(mpz_t numerator, mpz_t denominator, mpz_t antiPeriod, bool 
 				if (partial)
 				{
 					//qrList->SetPartial(1000);
-					fprintf(logFile, "%s", qrList.toString().c_str());
+					fprintf(logFile, "%s", qrList.ToString().c_str());
 				}
 				else
 				{
@@ -388,7 +345,6 @@ void ComputeDivision(mpz_t numerator, mpz_t denominator, mpz_t antiPeriod, bool 
 	//mpz_clear(rnd);
 
 }
-
 int Test_presenza_AP(mpz_t d, mpz_t ap)
 {
 	int div_perfetto = 0;
@@ -465,8 +421,6 @@ void gmp_power(mpz_t risultato, mpz_t base, mpz_t exp)
 	if (mpz_cmp_d(exp, 0) == 0){ mpz_set_d(risultato, 1); }
 	mpz_clear(aux);
 };/* function */
-
-
 void ProcessParameters(int argc, char* argv[])
 {
 	int i = 0;
@@ -518,4 +472,28 @@ void ProcessParameters(int argc, char* argv[])
 			mpz_set_str(matrixColumns, argv[i + 1], 10);
 		}
 	}
+}
+
+void QRListTest()
+{
+
+	cout << "Started QRList test..." << endl;
+	size_t listLength = 100;
+	mpz_t i,q,r;
+	size_t n = 1;
+
+	mpz_init(i); mpz_init(q); mpz_init(r);
+	mpz_set_d(i, n); mpz_set_d(q, n); mpz_set_d(r, n);
+
+	QRList* list = new QRList();
+	for (n = 1; n < listLength; n++)
+	{
+		list->Add(i, q, r);
+		mpz_set_d(i, n); mpz_set_d(q, n); mpz_set_d(r, n);
+	}
+	
+	list->Print();
+
+	delete list;
+
 }
